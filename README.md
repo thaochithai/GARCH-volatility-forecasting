@@ -51,6 +51,20 @@ The analysis uses daily observations of Microsoft Corporation (MSFT) stock price
 ### Stationary, Dependence, and Normality Tests
 - **Dickey-Fuller Test**: p-value = 0.01, rejecting the null hypothesis of non-stationarity at 1% significance level.
 - **Ljung-Box Test**: All test results show p-values < 0.01, rejecting the independence hypothesis at 1% significance level.
+~~~
+	Box-Ljung test
+data:  y
+X-squared = 159.04, df = 10, p-value < 2.2e-16
+	Box-Ljung test
+data:  abs(y)
+X-squared = 1025.1, df = 10, p-value < 2.2e-16
+	Box-Ljung test
+data:  y^2
+X-squared = 994.72, df = 10, p-value < 2.2e-16
+
+Normality Test result
+p-value: shapiro test 4.560542e-37     agostino.test 4.026979e-06     jarque.test 0
+~~~
 - **Normality Tests**: Shapiro, Agostino, and Jarque tests all reject normality at 1% significance level.
 
 ### Model Estimation
@@ -88,18 +102,45 @@ All tests suggest larger models (GARCH, tGARCH, eGARCH) significantly outperform
 ### Volatility Forecasts
 The models were used to forecast returns and volatility for 10 days (May 18-28, 2020). Most models predict decreasing volatility followed by an increase, except for eGARCH which shows a consistent sharp decrease.
 
-![ARCH Forecast](media/image1.png)
-![GARCH Forecast](media/image2.png)
-![tGARCH Forecast](media/image3.png)
-![eGARCH Forecast](media/image4.png)
+Forecasting using AR(1)-ARCH(1)
+![Picture1](https://github.com/user-attachments/assets/cad2d4d4-fa0c-42cb-9030-058666a84b65)
+
+Forecasting using AR(1)-GARCH(1)
+![Picture2](https://github.com/user-attachments/assets/d04d875d-0b87-481f-95e9-9626d7c6b57f)
+
+Forecasting using AR(1)-tGARCH(1)
+![Picture3](https://github.com/user-attachments/assets/c597d89f-be2f-4f1c-a369-8786670c2a9c)
+
+Forecasting using AR(1)-eGARCH(1)
+![Picture4](https://github.com/user-attachments/assets/1201c629-040c-40bc-9831-9a34fdfd70a5)
 
 ### Residuals Analysis
-The residuals from both ARCH(1) and GARCH(1,1) models show negative skewness (-0.127 and -0.044 respectively), indicating non-normal distribution. Anderson-Darling tests confirm non-normality with p-values of 2.844e-07 for both models.
+Residuals follow roughly normal distribution, thus, the first attempt is to check histogram of residuals, if the histogram of residuals looks normal then we have a valid model. Both ARCH (1) and GARCH (1,1) model shares the negative skewness of -0.1267284 and -0.04432336 respectively which is accompanied with the histogram indcates that the residuals is not exhibiting normal distribution. For further test of normal distribution, Aderson Darling test of normal distribution is used to statistically justify. 
 
-Ljung-Box tests reveal autocorrelation in ARCH(1) residuals (p < 0.01), while GARCH(1,1) residuals show independence (p > 0.01).
+![Picture19](https://github.com/user-attachments/assets/0892530a-274e-4f9b-8b58-274f82586976)
+![Picture20](https://github.com/user-attachments/assets/4d6c6234-7b58-4c4c-aa8a-23d4849924ff)
 
-![Residuals Analysis](media/image5.png)
-![Residuals Analysis](media/image6.png)
+
+Both the AD test of ARCH (1) and GARCH (1,1) model reveal the p-value of 2.844e-07 which is less than 1%, thus, the statistical test suggests the rejection of null hypothesis of normal distribution at the significance level of 1 %. Furthermore, I also use the Ljung-Box test to seek for the evidence of autocorrelation. The dependence test of ARCH (1)  model reveals the p-value of less than 1% meaning the rejection of null hypothesis of residuals being independently distributed which implies that there is autocorrelation among data. However, desipte failure of normality test as mentioned above of GARCH (1,1) model, the Ljung-Box test discloses the p-value of more than 1% which means that the residuals of GARCH (1,1) model is independently distributed. 
+
+~~~
+Anderson-Darling GoF Test (ARCH)
+data:  as.numeric(arch)  and  pt.hat
+AD = 50.398, p-value = 2.844e-0
+
+Anderson-Darling GoF Test (GARCH)
+data:  as.numeric(garch)  and  pt.hat
+AD = 41.893, p-value = 2.844e-07
+
+Box-Ljung test (ARCH)
+data:  arch
+X-squared = 37.416, df = 10, p-value = 4.794e-05
+
+Box-Ljung test (GARCH)
+data:  egarch
+X-squared = 22.867, df = 10, p-value = 0.01125
+~~~
+
 
 ## 2. Moving Window Volatility and Correlations
 
@@ -114,16 +155,26 @@ Data spans from January 2012 to May 20, 2020 (2,107 observations).
 ### Volatility for Various Window Lengths
 Moving window volatility was calculated for window lengths of 10, 100, and 1000 observations.
 
-![Window Length 10](media/image7.png)
-![Window Length 100](media/image8.png)
-![Window Length 1000](media/image9.png)
+Window Length 10
+![Picture5](https://github.com/user-attachments/assets/0b9df345-525a-4530-b8d7-e30e1a2502ea)
+
+Window Length 100
+![Picture6](https://github.com/user-attachments/assets/ed0120c0-ccdd-4275-9733-82e154832150)
+
+Window Length 1000
+![Picture7](https://github.com/user-attachments/assets/4539a5ab-ec0a-4d3b-9b2a-ea1cad1f6d91)
 
 ### Correlation for Various Window Lengths
 Correlations between assets were calculated for window lengths of 10, 100, and 1000 observations.
 
-![Correlation Window Length 10](media/image10.png)
-![Correlation Window Length 100](media/image11.png)
-![Correlation Window Length 1000](media/image12.png)
+Correlation Window Length 10
+![Picture8](https://github.com/user-attachments/assets/ce86885b-6e4c-414e-ae78-1eb8cf28e01b)
+
+Correlation Window Length 100
+![Picture9](https://github.com/user-attachments/assets/ba2826c9-0f1f-4e2f-a05b-e70e99df7c48)
+
+Correlation Window Length 1000
+![Picture10](https://github.com/user-attachments/assets/ee955f92-fbe4-4251-aef9-61bcb880832e)
 
 ### Analysis of Window Length Sensitivity
 - **Window Length 10**: Each new observation changes 10% of the data, causing high fluctuations. Observations at extremes move more dramatically, resulting in volatile estimates.
@@ -163,9 +214,10 @@ Using a window length of 1,000 observations for 1% VaR:
 
 The EWMA method performs poorly with a violation ratio (VR) of 2.96, far from the ideal 1.00. The Historical Simulation (HS) method shows better results with a VR of 1.68, though still not ideal.
 
-![Backtesting HS and EWMA](media/image13.png)
+Backtesting HS and EWMA
+![Picture11](https://github.com/user-attachments/assets/e5056cf8-5cb6-4986-8c53-3a0b33ef2a5f)
 
-The graph shows that EWMA VaRs are more volatile than HS. EWMA quickly adapts to high volatility periods and sharply adjusts VaR forecasts, while HS reacts more slowly to changing risk profiles.
+The gragh below reveals that VaRs from EWMA method are more volatile than HS method. For this particular case, the HS method shows a better performance compared to EWMA given that it observed data directly, and subject to less estimation error. As indicated from the graph, the volatility remains relatively low for both methods till the 400th observations and the differences apprears. While EWMA continues to be more volatile and fluctuates as it promtly pick up the high volatility and adjust VaR forecasts sharply upwards, HS model still reacts really slowly to changes in the risks of the assets.
 
 ## 4. Backtesting HS and GARCH
 
@@ -186,7 +238,8 @@ Using a window length of 500 observations for 1% VaR:
 | nGARCH | 21 | 35 | 1.679104 | 0.01527992 |
 | tGARCH | 21 | 38 | 1.616915 | 0.01638113 |
 
-![Backtesting AAPL](media/image14.png)
+Backtesting AAPL
+![Picture12](https://github.com/user-attachments/assets/1a5e2c19-67f0-4705-b332-ba129489ae1b)
 
 The Historical Simulation performs best with a VR of 1.12, while normal GARCH and Student-t GARCH show higher VRs (1.68 and 1.62). However, the GARCH models respond faster to market movements due to their higher volatility (0.015 and 0.016).
 
@@ -199,7 +252,9 @@ Using a window length of 500 observations for 1% VaR:
 | nGARCH | 21 | 39 | 1.652346 | 0.01789841 |
 | tGARCH | 21 | 33 | 1.784534 | 0.02651924 |
 
-![Backtesting FB](media/image15.png)
+Backtesting FB
+![Picture13](https://github.com/user-attachments/assets/da61bd67-fdf7-4597-9dd3-26614742a473)
+
 
 All three models have high violation ratios, with FB returns showing more fluctuations than AAPL. Student-t GARCH, with its higher VaR volatility of 0.027, is more sensitive to return movements.
 
@@ -212,7 +267,8 @@ Using a window length of 500 observations for 1% VaR:
 | nGARCH | 21 | 39 | 1.119403 | 0.0142786 |
 | tGARCH | 21 | 33 | 1.30597 | 0.01447579 |
 
-![Backtesting AMZN](media/image16.png)
+Backtesting AMZN
+![Picture12](https://github.com/user-attachments/assets/fbcc498a-45f2-4f1a-9ec2-1f4846355733)
 
 The HS method shows the best results with a VR close to 1. For AMZN returns, normal GARCH performs better than Student-t GARCH, though both respond faster to market changes than HS.
 
@@ -269,7 +325,9 @@ Using a window length of 500 observations for 1% VaR:
 
 The EWMA method performs poorly with a VR of 2.52, well above the ideal 1.00.
 
-![EWMA Backtesting](media/image17.png)
+EWMA Backtesting
+![Picture15](https://github.com/user-attachments/assets/acae3d53-0257-489a-a0e6-ef3cb98cffe5)
+
 
 The graph shows highly volatile VaR estimates that respond quickly to market changes.
 
@@ -300,7 +358,9 @@ According to standard assessment rules:
 
 With a VR of 1.83, the EWMA model is classified as "bad" for Netflix returns.
 
-![Advanced EWMA Backtesting](media/image18.png)
+Advanced EWMA Backtesting
+![Picture16](https://github.com/user-attachments/assets/df9175bc-727c-4cb7-b71b-82b20330773b)
+
 
 ### Statistical Tests for Violation Ratios and Clustering
 
@@ -316,3 +376,6 @@ The test strongly rejects the null hypothesis of correct exceedances, indicating
 - p-value: 1.28e-13 (reject null at 5%)
 
 The test rejects the null hypothesis of no clustering, indicating that violations are not independent. This means today's violation can predict tomorrow's violation, suggesting an inadequate VaR model for Netflix returns.
+
+#Data Collection
+- Retrieve from Yahoo Finance
