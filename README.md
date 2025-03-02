@@ -1,39 +1,45 @@
-# GARCH Family Models for Stock Volatility Forecasting
-
+# Financial Return Series Volatility Forecasting using GARCH-family models
 ![Finance](https://img.shields.io/badge/Finance-Volatility%20Modeling-green)
 ![Status](https://img.shields.io/badge/Status-Completed-brightgreen)
 
-## Project Overview
+This repository contains analysis and implementation of various volatility forecasting models for financial time series. The project explores different GARCH-type models, moving window volatility, correlation estimations, and various backtesting techniques for Value at Risk (VaR) and Expected Shortfall (ES).
 
-This project implements and compares various GARCH (Generalized Autoregressive Conditional Heteroskedasticity) family models to forecast stock return volatility for tech companies. The analysis focuses on evaluating different volatility forecasting techniques and risk measures to determine which models provide the most accurate and reliable predictions across different market conditions.
+## Techniques & Key Highlights
+
+### Methods Implemented
+- **GARCH-type Models**: ARCH(1), GARCH(1,1), tGARCH(1,1), eGARCH(1,1)
+- **Moving Window Analysis**: Applied to volatility and correlation across multiple window lengths (10, 100, 1000)
+- **VaR and ES Estimation**: Historical Simulation (HS), Exponentially Weighted Moving Average (EWMA)
+- **Backtesting Methods**: Violation ratios, VaR volatility, Kupiec's POF test, Christoffersen independence test
+- **Statistical Tests**: Unit root tests, dependence tests, normality tests, parameter significance, likelihood ratio tests
+
+### Key Findings
+- **Model Selection**: eGARCH and tGARCH consistently outperformed simpler models (ARCH, standard GARCH) based on AIC and likelihood ratio tests
+- **Window Size Sensitivity**: Smaller window sizes (10) produced highly volatile estimates while larger windows (1000) missed recent market trends
+- **VaR Performance**: Historical Simulation provided more stable but slower-adapting VaR estimates than EWMA or GARCH models
+- **Model Adequacy**: For most tech stocks analyzed, even sophisticated models showed violation ratios exceeding expected levels, especially during high volatility periods
+- **Risk Underestimation**: Expected Shortfall backtests revealed that many models systematically understate tail risk even when VaR appears adequate
+- **EWMA Assessment**: EWMA models for streaming service stocks exhibited poor performance with violation ratios >2, indicating unreliable risk estimates
 
 ## Table of Contents
-- [Data Description](#data-description)
-- [Model Implementation and Evaluation](#model-implementation-and-evaluation)
-  - [GARCH Model Comparison](#garch-model-comparison)
-  - [Moving Window Volatility Analysis](#moving-window-volatility-analysis)
-  - [Value-at-Risk (VaR) Backtesting](#value-at-risk-var-backtesting)
-  - [Expected Shortfall (ES) Backtesting](#expected-shortfall-es-backtesting)
-  - [EWMA Model Evaluation](#ewma-model-evaluation)
-- [Results and Findings](#results-and-findings)
-- [Conclusions](#conclusions)
+1. [GARCH Models Analysis](#1-garch-models-analysis)
+2. [Moving Window Volatility and Correlations](#2-moving-window-volatility-and-correlations)
+3. [Backtesting Historical Simulation and EWMA](#3-backtesting-historical-simulation-and-ewma)
+4. [Backtesting HS and GARCH](#4-backtesting-hs-and-garch)
+5. [Expected Shortfall Backtesting](#5-expected-shortfall-backtesting)
+6. [EWMA Backtesting with Multiple Methods](#6-ewma-backtesting-with-multiple-methods)
+7. [Advanced Backtests for EWMA](#7-advanced-backtests-for-ewma)
 
----
+## 1. GARCH Models Analysis
 
-## Data Description
+### Data Summary
+The analysis uses daily observations of Microsoft Corporation (MSFT) stock prices between January 1, 2012, and May 18, 2020 (2,106 observations). All data are adjusted prices to ensure reliable testing results.
 
-The analysis uses daily adjusted closing prices from various tech companies:
-
-- **Microsoft (MSFT)**: Data from Jan 2012 to May 2020 (2,106 observations)
-- **Apple (AAPL)**, **Facebook (FB)**, **Amazon (AMZN)**, **Tesla (TSLA)**: Jan 2012 to May 2020
-- Additional tech stocks: **Dell (DELL)**, **IBM**, **Intel (INTC)**, **Roku (ROKU)**, **Disney (DIS)**, **Netflix (NFLX)**
-
-### MSFT Return Statistics Summary
-
+### Summary Statistics of Microsoft Stock Returns
 | Statistic | Value |
 |-----------|-------|
-| Minimum | -15.9453% |
-| Maximum | 13.2929% |
+| Min | -15.9453% |
+| Max | 13.2929% |
 | 1st Quartile | -0.62% |
 | 3rd Quartile | 0.8480% |
 | Median | 0.0689% |
@@ -42,352 +48,271 @@ The analysis uses daily adjusted closing prices from various tech companies:
 | Skewness | -0.2493591 |
 | Kurtosis | 12.86153 |
 
-### Pre-modeling Tests
+### Stationary, Dependence, and Normality Tests
+- **Dickey-Fuller Test**: p-value = 0.01, rejecting the null hypothesis of non-stationarity at 1% significance level.
+- **Ljung-Box Test**: All test results show p-values < 0.01, rejecting the independence hypothesis at 1% significance level.
+- **Normality Tests**: Shapiro, Agostino, and Jarque tests all reject normality at 1% significance level.
 
-Before fitting the GARCH models, several statistical tests were performed to confirm the data characteristics:
+### Model Estimation
+Four models were compared: ARCH(1), GARCH(1,1), tGARCH(1,1), and eGARCH(1,1) with Student-t distribution.
 
-#### Stationarity Test (Dickey-Fuller)
+#### Parameter Significance Test Results
+| Model | Parameters | Estimates | p-values |
+|-------|------------|-----------|----------|
+| ARCH(1) | ω | 0.001183 | 0.000001 |
+|        | α₁ | 0.337150 | 0.000000 |
+| GARCH(1,1) | ω | 0.001179 | 0.000000 |
+|            | α₁ | 0.136873 | 0.000000 |
+|            | β₁ | 0.819396 | 0.000000 |
+| tGARCH(1,1) | ω | 0.000914 | 0.000040 |
+|             | α₁ | 0.133520 | 0.000000 |
+|             | β₁ | 0.853660 | 0.000000 |
+| eGARCH(1,1) | ω | 0.000937 | 0.000045 |
+|             | α₁ | -0.108446 | 0.000000 |
+|             | β₁ | 0.953271 | 0.000000 |
+|             | σ₁ | 0.215522 | 0.000000 |
 
-```
-Dickey-Fuller = -13.725, Lag order = 12, p-value = 0.01
-alternative hypothesis: stationary
-```
-- **Result**: p-value < 0.05 confirms the return series is stationary
-
-#### Dependence Test (Ljung-Box)
-
-```
-Returns:            X-squared = 159.04, df = 10, p-value < 2.2e-16
-Absolute Returns:   X-squared = 1025.1, df = 10, p-value < 2.2e-16
-Squared Returns:    X-squared = 994.72, df = 10, p-value < 2.2e-16
-```
-- **Result**: p-values < 0.01 confirm the return series exhibits significant autocorrelation
-
-#### Normality Tests
-
-```
-Shapiro test:    p-value = 4.560542e-37
-Agostino test:   p-value = 4.026979e-06
-Jarque test:     p-value = 0
-```
-- **Result**: All tests confirm non-normal distribution of returns
-
----
-
-## Model Implementation and Evaluation
-
-### GARCH Model Comparison
-
-Four different GARCH-type models were implemented and compared:
-
-- **ARCH(1)**: Basic Autoregressive Conditional Heteroskedasticity model
-- **GARCH(1,1)**: Generalized ARCH incorporating volatility persistence
-- **tGARCH(1,1)**: GARCH with Student's t-distribution for better fat-tail modeling
-- **eGARCH(1,1)**: Exponential GARCH capturing asymmetric volatility response
-
-#### Parameter Estimates and Significance
-
-| Model | Parameter | Estimate | p-value |
-|-------|-----------|----------|---------|
-| **ARCH(1)** | ω | 0.001183 | 0.000001 |
-|  | α₁ | 0.337150 | 0.000000 |
-| **GARCH(1,1)** | ω | 0.001179 | 0.000000 |
-|  | α₁ | 0.136873 | 0.000000 |
-|  | β₁ | 0.819396 | 0.000000 |
-| **tGARCH(1,1)** | ω | 0.000914 | 0.000040 |
-|  | α₁ | 0.133520 | 0.000000 |
-|  | β₁ | 0.853660 | 0.000000 |
-| **eGARCH(1,1)** | ω | 0.000937 | 0.000045 |
-|  | α₁ | -0.108446 | 0.000000 |
-|  | β₁ | 0.953271 | 0.000000 |
-|  | σ₁ | 0.215522 | 0.000000 |
-
-All parameters are highly significant at the 1% level, confirming the presence of ARCH/GARCH effects in the Microsoft return series.
-
-#### Model Comparison with Log-Likelihood and AIC
-
-| Model | Log-Likelihood | AIC |
-|-------|----------------|-----|
-| ARCH(1) | 6089.575 | -5.7783 |
-| GARCH(1,1) | 6146.779 | -5.8284 |
-| tGARCH(1,1) | 6170.503 | -5.8533 |
-| eGARCH(1,1) | 6165.739 | -5.8488 |
-
-- **tGARCH(1,1)** has the lowest AIC, indicating it provides the best fit to the data when penalizing for model complexity
-- **eGARCH(1,1)** is a close second, suggesting the asymmetric volatility response is important
+All parameters are highly significant at 1% level. According to AIC, eGARCH is the best fit model (-5.8488), followed by tGARCH (-5.8533), with ARCH(1) performing worst (-5.7783).
 
 #### Likelihood Ratio Tests
+| Unrestricted Model | Restricted Model | LR | Restrictions | Critical Value (1%) |
+|-------------------|-----------------|-----|--------------|---------------------|
+| GARCH(1,1) | ARCH(1) | 114.4082 | 1 | 6.63 (0.000) |
+| tGARCH(1,1) | ARCH(1) | 161.8561 | 2 | 9.21 (0.000) |
+| eGARCH(1,1) | ARCH(1) | 152.3263 | 1 | 6.63 (0.000) |
+| tGARCH(1,1) | GARCH(1,1) | 47.44797 | 1 | 6.635 (0.000) |
+| eGARCH(1,1) | GARCH(1,1) | 37.91812 | 1 | 6.635 (0.000) |
 
-| Unrestricted Model | Restricted Model | LR Statistic | Critical Value (1%) | Conclusion |
-|-------------------|-----------------|--------------|---------------------|------------|
-| GARCH(1,1) | ARCH(1) | 114.408 | 6.63 | Reject H₀ |
-| tGARCH(1,1) | ARCH(1) | 161.856 | 9.21 | Reject H₀ |
-| eGARCH(1,1) | ARCH(1) | 152.326 | 6.63 | Reject H₀ |
-| tGARCH(1,1) | GARCH(1,1) | 47.448 | 6.635 | Reject H₀ |
-| eGARCH(1,1) | GARCH(1,1) | 37.918 | 6.635 | Reject H₀ |
+All tests suggest larger models (GARCH, tGARCH, eGARCH) significantly outperform smaller ones (ARCH).
 
-The likelihood ratio tests consistently show that more complex models provide statistically significant improvements over simpler ones.
+### Volatility Forecasts
+The models were used to forecast returns and volatility for 10 days (May 18-28, 2020). Most models predict decreasing volatility followed by an increase, except for eGARCH which shows a consistent sharp decrease.
 
-#### Volatility Forecasts
+![ARCH Forecast](media/image1.png)
+![GARCH Forecast](media/image2.png)
+![tGARCH Forecast](media/image3.png)
+![eGARCH Forecast](media/image4.png)
 
-The models were used to forecast volatility for the next 10 days (May 18th to May 28th, 2020). Below are visualizations of the forecasts for each model:
+### Residuals Analysis
+The residuals from both ARCH(1) and GARCH(1,1) models show negative skewness (-0.127 and -0.044 respectively), indicating non-normal distribution. Anderson-Darling tests confirm non-normality with p-values of 2.844e-07 for both models.
 
-![AR(1)-ARCH(1) Forecast](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/AR1_ARCH1_forecast.png)
-*AR(1)-ARCH(1) Volatility Forecast*
+Ljung-Box tests reveal autocorrelation in ARCH(1) residuals (p < 0.01), while GARCH(1,1) residuals show independence (p > 0.01).
 
-![AR(1)-GARCH(1,1) Forecast](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/AR1_GARCH11_forecast.png)
-*AR(1)-GARCH(1,1) Volatility Forecast*
+![Residuals Analysis](media/image5.png)
+![Residuals Analysis](media/image6.png)
 
-![AR(1)-tGARCH(1,1) Forecast](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/AR1_tGARCH11_forecast.png)
-*AR(1)-tGARCH(1,1) Volatility Forecast*
+## 2. Moving Window Volatility and Correlations
 
-![AR(1)-eGARCH(1,1) Forecast](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/AR1_eGARCH11_forecast.png)
-*AR(1)-eGARCH(1,1) Volatility Forecast*
+### Data Summary
+The portfolio consists of three "Big Five" technology companies (equal weighting):
+- Facebook (FB): Social media giant with tremendous growth
+- Apple (AAPL): Consumer electronics and software leader
+- Amazon (AMZN): E-commerce and cloud computing powerhouse
 
-All models generally predict decreasing volatility in the immediate future, followed by an increase. The eGARCH model shows a more pronounced decrease in consecutive days compared to other models.
+Data spans from January 2012 to May 20, 2020 (2,107 observations).
 
-#### Residual Analysis
+### Volatility for Various Window Lengths
+Moving window volatility was calculated for window lengths of 10, 100, and 1000 observations.
 
-The residuals from ARCH(1) and GARCH(1,1) models were analyzed to check model adequacy:
+![Window Length 10](media/image7.png)
+![Window Length 100](media/image8.png)
+![Window Length 1000](media/image9.png)
 
-- Both models exhibit negative skewness (ARCH: -0.127, GARCH: -0.044)
-- Anderson-Darling test p-value = 2.844e-07 for both models, rejecting normality
-- Ljung-Box test indicated autocorrelation in ARCH(1) residuals (p-value = 4.794e-05)
-- GARCH(1,1) residuals showed no significant autocorrelation (p-value = 0.01125)
+### Correlation for Various Window Lengths
+Correlations between assets were calculated for window lengths of 10, 100, and 1000 observations.
 
----
+![Correlation Window Length 10](media/image10.png)
+![Correlation Window Length 100](media/image11.png)
+![Correlation Window Length 1000](media/image12.png)
 
-### Moving Window Volatility Analysis
+### Analysis of Window Length Sensitivity
+- **Window Length 10**: Each new observation changes 10% of the data, causing high fluctuations. Observations at extremes move more dramatically, resulting in volatile estimates.
+- **Window Length 300**: Each new observation changes only 0.33% of the data, providing more stability.
+- **Window Length 1000**: Much less sensitive to extremes but potentially less relevant to current market conditions.
 
-Three tech stocks (Facebook, Apple, Amazon) were used to analyze the sensitivity of window length on volatility and correlation estimates.
+## 3. Backtesting Historical Simulation and EWMA
 
-#### Volatility for Different Window Lengths
+### Data Summary
+The portfolio consists of three stocks (equal weighting):
+- Facebook (FB): Social media giant
+- Apple (AAPL): Consumer electronics leader
+- Tesla (TSLA): Electric vehicle and clean energy company
 
-![10-Day Window Volatility](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/window10_volatility.png)
-*10-Day Moving Window Volatility*
+Data spans from January 2012 to May 20, 2020 (2,107 observations).
 
-![100-Day Window Volatility](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/window100_volatility.png)
-*100-Day Moving Window Volatility*
+### Portfolio Return Summary Statistics
+| Statistic | Value |
+|-----------|-------|
+| Min | -16.5666% |
+| Max | -10.9948% |
+| 1st Quartile | -0.8096% |
+| 3rd Quartile | 1.1169% |
+| Median | 0.1655% |
+| Mean | 0.1106% |
+| Standard Deviation | 1.836152% |
+| Skewness | -0.4745738 |
+| Kurtosis | 9.513039 |
 
-![1000-Day Window Volatility](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/window1000_volatility.png)
-*1000-Day Moving Window Volatility*
-
-#### Correlation for Different Window Lengths
-
-![10-Day Window Correlation](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/window10_correlation.png)
-*10-Day Moving Window Correlation*
-
-![100-Day Window Correlation](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/window100_correlation.png)
-*100-Day Moving Window Correlation*
-
-![1000-Day Window Correlation](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/window1000_correlation.png)
-*1000-Day Moving Window Correlation*
-
-#### Window Length Sensitivity Analysis
-
-- **10-day window**: Shows high volatility and frequent large fluctuations due to 10% data change with each new observation
-- **100-day window**: More stable but still responsive to market changes (0.33% change per observation)
-- **1000-day window**: Most stable but potentially less relevant to current market conditions
-
-The tradeoff between responsiveness and stability highlights the importance of selecting an appropriate window length for different applications.
-
----
-
-### Value-at-Risk (VaR) Backtesting
-
-#### Historical Simulation (HS) vs. EWMA
-
-A portfolio of Facebook, Apple, and Tesla stocks with equal weights was used to compare HS and EWMA methods for VaR estimation:
-
-| Method | Expected Violations | Actual Violations | Violation Ratio | VaR Volatility |
-|--------|---------------------|------------------|-----------------|----------------|
-| EWMA | 21 | 62 | 2.964 | 0.0205082 |
-| HS | 21 | 35 | 1.680 | 0.003370 |
-
-![HS vs EWMA VaR Backtesting](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/HS_vs_EWMA_backtest.png)
-*Historical Simulation vs. EWMA VaR Backtesting Results*
-
-- HS method showed better performance with a VR closer to 1
-- EWMA was more volatile and reactive to market changes
-- Both methods exceeded the expected number of violations, but EWMA performed significantly worse
-
-#### Normal GARCH, Student-t GARCH, and HS Comparison
-
-Individual backtests were performed for Apple, Facebook, and Amazon stocks:
-
-**Apple (AAPL) Results:**
+### Backtesting Results
+Using a window length of 1,000 observations for 1% VaR:
 
 | Method | Expected Violations | Actual Violations | Violation Ratio | VaR Volatility |
-|--------|---------------------|------------------|-----------------|----------------|
-| HS | 21 | 25 | 1.119 | 0.008002 |
-| nGARCH | 21 | 35 | 1.679 | 0.015280 |
-| tGARCH | 21 | 38 | 1.617 | 0.016381 |
+|--------|---------------------|-------------------|-----------------|----------------|
+| EWMA | 21 | 62 | 2.964427 | 0.0205082 |
+| HS | 21 | 35 | 1.679842 | 0.003369895 |
 
-![AAPL VaR Backtesting](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/AAPL_VaR_backtest.png)
-*AAPL VaR Backtesting Results*
+The EWMA method performs poorly with a violation ratio (VR) of 2.96, far from the ideal 1.00. The Historical Simulation (HS) method shows better results with a VR of 1.68, though still not ideal.
 
-**Facebook (FB) Results:**
+![Backtesting HS and EWMA](media/image13.png)
 
-| Method | Expected Violations | Actual Violations | Violation Ratio | VaR Volatility |
-|--------|---------------------|------------------|-----------------|----------------|
-| HS | 21 | 26 | 1.190 | 0.008167 |
-| nGARCH | 21 | 39 | 1.652 | 0.017898 |
-| tGARCH | 21 | 33 | 1.785 | 0.026519 |
+The graph shows that EWMA VaRs are more volatile than HS. EWMA quickly adapts to high volatility periods and sharply adjusts VaR forecasts, while HS reacts more slowly to changing risk profiles.
 
-![FB VaR Backtesting](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/FB_VaR_backtest.png)
-*FB VaR Backtesting Results*
+## 4. Backtesting HS and GARCH
 
-**Amazon (AMZN) Results:**
+### Data Summary
+The portfolio consists of three stocks (equal weighting):
+- Apple (AAPL): Consumer electronics and software leader
+- Facebook (FB): Social media giant
+- Amazon (AMZN): E-commerce and cloud computing leader
 
-| Method | Expected Violations | Actual Violations | Violation Ratio | VaR Volatility |
-|--------|---------------------|------------------|-----------------|----------------|
-| HS | 21 | 26 | 1.057 | 0.010348 |
-| nGARCH | 21 | 39 | 1.119 | 0.014279 |
-| tGARCH | 21 | 33 | 1.306 | 0.014476 |
+Data spans from January 2012 to May 21, 2020 (2,108 observations).
 
-![AMZN VaR Backtesting](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/AMZN_VaR_backtest.png)
-*AMZN VaR Backtesting Results*
-
-Across all three stocks, the HS method consistently outperformed GARCH models in terms of violation ratio, though it was less responsive to volatility changes.
-
----
-
-### Expected Shortfall (ES) Backtesting
-
-ES backtesting was performed for Dell, IBM, and Intel using GARCH(1,1) with Student-t distribution.
-
-**Dell Technologies (DELL) Results:**
-
-```
-VaR Backtest Report:
-Expected Exceed: 4.5
-Actual VaR Exceed: 7
-Actual %: 1.6%
-Kupiec Test p-value: 0.264
-Christoffersen Test p-value: 0.48
-
-ES Backtest Report:
-Expected Exceed: 4
-Actual Exceed: 7
-p-value: 0.0202
-Decision: Reject H0 (Mean of Excess Violations > 0)
-```
-
-**IBM Results:**
-
-```
-VaR Backtest Report:
-Expected Exceed: 16.1
-Actual VaR Exceed: 27
-Actual %: 1.7%
-Kupiec Test p-value: 0.013
-Christoffersen Test p-value: 0.035
-
-ES Backtest Report:
-Expected Exceed: 16
-Actual Exceed: 27
-p-value: 7.72e-09
-Decision: Reject H0 (Mean of Excess Violations > 0)
-```
-
-**Intel (INTC) Results:**
-
-```
-VaR Backtest Report:
-Expected Exceed: 16.1
-Actual VaR Exceed: 16
-Actual %: 1%
-Kupiec Test p-value: 0.982
-Christoffersen Test p-value: 0.851
-
-ES Backtest Report:
-Expected Exceed: 16
-Actual Exceed: 16
-p-value: 0.00018
-Decision: Reject H0 (Mean of Excess Violations > 0)
-```
-
-For all three stocks, the ES backtests indicated that the GARCH models underestimated the tail risk, even when VaR violations were at acceptable levels (as with Intel).
-
----
-
-### EWMA Model Evaluation
-
-A portfolio of Netflix, Roku, and Disney was created to backtest the EWMA model using various methods:
-
-#### Violation Ratio and VaR Volatility
+### Backtesting Results for Apple (AAPL)
+Using a window length of 500 observations for 1% VaR:
 
 | Method | Expected Violations | Actual Violations | Violation Ratio | VaR Volatility |
-|--------|---------------------|------------------|-----------------|----------------|
-| EWMA | 21 | 53 | 2.516 | 0.018808 |
+|--------|---------------------|-------------------|-----------------|----------------|
+| HS | 21 | 25 | 1.119403 | 0.008001864 |
+| nGARCH | 21 | 35 | 1.679104 | 0.01527992 |
+| tGARCH | 21 | 38 | 1.616915 | 0.01638113 |
 
-![EWMA Backtest](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/EWMA_backtest.png)
-*EWMA Backtest Results*
+![Backtesting AAPL](media/image14.png)
 
-#### Statistical Tests for Netflix (NFLX)
+The Historical Simulation performs best with a VR of 1.12, while normal GARCH and Student-t GARCH show higher VRs (1.68 and 1.62). However, the GARCH models respond faster to market movements due to their higher volatility (0.015 and 0.016).
 
-Unconditional coverage test and independence test were applied to evaluate the EWMA model for Netflix stock:
+### Backtesting Results for Facebook (FB)
+Using a window length of 500 observations for 1% VaR:
 
-```
-Violation Ratio: 1.827 (38 actual violations vs. 21 expected)
-Unconditional Coverage Test:
-  - Test Statistic: 57.663
-  - Critical Value: 3.841
-  - p-value: 3.11e-14
-  - Decision: Reject H0 (Correct Exceedances)
+| Method | Expected Violations | Actual Violations | Violation Ratio | VaR Volatility |
+|--------|---------------------|-------------------|-----------------|----------------|
+| HS | 21 | 26 | 1.189689 | 0.008167021 |
+| nGARCH | 21 | 39 | 1.652346 | 0.01789841 |
+| tGARCH | 21 | 33 | 1.784534 | 0.02651924 |
 
-Independence Test:
-  - Test Statistic: 59.376
-  - Critical Value: 5.991
-  - p-value: 1.28e-13
-  - Decision: Reject H0 (Independent Violations)
-```
+![Backtesting FB](media/image15.png)
 
-Based on the rule of thumb where VR ∈ [0.3, 0.5] or VR ∈ [1.5, 2] indicates a bad model, and VR > 2 indicates a useless model, the EWMA approach with VR = 2.516 for the portfolio and VR = 1.827 for Netflix is classified as a bad to useless model for these tech stocks.
+All three models have high violation ratios, with FB returns showing more fluctuations than AAPL. Student-t GARCH, with its higher VaR volatility of 0.027, is more sensitive to return movements.
 
-![Netflix EWMA Backtest](https://raw.githubusercontent.com/username/stock-volatility-garch/main/results/figures/NFLX_EWMA_backtest.png)
-*Netflix EWMA Backtest Results*
+### Backtesting Results for Amazon (AMZN)
+Using a window length of 500 observations for 1% VaR:
 
----
+| Method | Expected Violations | Actual Violations | Violation Ratio | VaR Volatility |
+|--------|---------------------|-------------------|-----------------|----------------|
+| HS | 21 | 26 | 1.057214 | 0.01034832 |
+| nGARCH | 21 | 39 | 1.119403 | 0.0142786 |
+| tGARCH | 21 | 33 | 1.30597 | 0.01447579 |
 
-## Results and Findings
+![Backtesting AMZN](media/image16.png)
 
-1. **GARCH Model Comparison**:
-   - tGARCH(1,1) and eGARCH(1,1) consistently outperformed simpler models
-   - Likelihood ratio tests confirmed that more complex models provided statistically significant improvements
-   - All models forecast decreasing volatility in the short term followed by an increase
+The HS method shows the best results with a VR close to 1. For AMZN returns, normal GARCH performs better than Student-t GARCH, though both respond faster to market changes than HS.
 
-2. **Moving Window Analysis**:
-   - Window length significantly impacts volatility and correlation estimates
-   - Shorter windows (10 days) capture recent dynamics but exhibit high variability
-   - Longer windows (1000 days) provide stability but may be slow to react to market changes
-   - Medium windows (100 days) offer a balance between responsiveness and stability
+## 5. Expected Shortfall Backtesting
 
-3. **VaR Backtesting**:
-   - Historical Simulation consistently outperformed EWMA and GARCH models across different stocks
-   - EWMA was particularly poor with violation ratios often exceeding 2
-   - GARCH models were more responsive to market changes but had higher violation ratios
+### Data Summary
+Three technology stocks were selected for individual backtesting with a window length of 500 observations:
+- Dell Technologies (DELL): Computer hardware and services
+- IBM: Global technology and cloud computing provider
+- Intel (INTC): Semiconductor manufacturer
 
-4. **ES Backtesting**:
-   - All tested GARCH models underestimated tail risk
-   - Even when VaR estimates were acceptable (e.g., Intel), ES backtests indicated problems
-   - This highlights the importance of looking beyond VaR to assess tail risk properly
+Data spans from January 2012 to May 22, 2020 (2,109 observations).
 
-5. **EWMA Evaluation**:
-   - EWMA performed poorly for tech stocks with violation ratios consistently above 1.5
-   - Statistical tests strongly rejected both correct exceedances and independence hypotheses
-   - High VaR volatility indicates EWMA is very reactive to market changes but not in a way that produces reliable risk estimates
+### VaR and ES Backtest for Dell (DELL)
+- **VaR Backtest**: 7 actual exceedances vs. 4.5 expected at 99% confidence level
+  - Kupiec test p-value: 0.264 (fail to reject null at 1%)
+  - Christoffersen test p-value: 0.48 (fail to reject null at 1%)
+- **ES Backtest**: p-value: 0.02, rejecting null hypothesis at 5% level
+  
+The ES backtest indicates inadequacy in the GARCH(1,1) model for Dell at 5% significance level.
 
-## Conclusions
+### VaR and ES Backtest for IBM
+- **VaR Backtest**: 27 actual exceedances vs. 16.1 expected at 99% confidence level
+  - Kupiec test p-value: 0.013 (fail to reject null at 1%)
+  - Christoffersen test p-value: 0.035 (reject null at 5%)
+- **ES Backtest**: p-value: 7.72e-09, rejecting null hypothesis at 1% level
 
-1. **Model Selection**: For volatility forecasting of tech stocks, tGARCH and eGARCH models provide superior performance compared to simpler models, capturing both persistence and asymmetry in volatility.
+Both VaR and ES backtests indicate that the GARCH(1,1) model fails to accurately forecast IBM's risk at the 5% and 1% significance levels, respectively.
 
-2. **Risk Measurement**: Historical Simulation consistently outperforms parametric methods (EWMA, GARCH) for VaR estimation in tech stocks, suggesting that empirical distributions better capture the true risk characteristics than parameterized models.
+### VaR and ES Backtest for Intel (INTC)
+- **VaR Backtest**: 16 actual exceedances (matching expected) at 99% confidence level
+  - Kupiec test p-value: 0.982 (fail to reject null at 1%)
+  - Christoffersen test p-value: 0.851 (fail to reject null at 1%)
+- **ES Backtest**: p-value: 0.0002, rejecting null hypothesis at 1% level
 
-3. **Window Sensitivity**: The choice of window length involves a crucial tradeoff between responsiveness and stability. Different applications and market conditions may require different window lengths.
+While the VaR model appears adequate, the ES backtest indicates that the model systematically understates the underlying level of risk at the 1% significance level.
 
-4. **Tail Risk Assessment**: VaR alone is insufficient for comprehensive risk management. ES backtesting reveals that models with acceptable VaR performance may still severely underestimate tail risk.
+## 6. EWMA Backtesting with Multiple Methods
 
-5. **Practical Applications**: For risk management in tech stocks, a combination of Historical Simulation for VaR estimation and advanced GARCH models (tGARCH, eGARCH) for volatility forecasting provides the most reliable results.
+### Data Summary
+The portfolio consists of three top streaming service providers (weighted as 1/4, 1/4, 1/2):
+- Netflix (NFLX): Leading streaming media provider
+- Roku (ROKU): Digital media player manufacturer
+- Disney (DIS): Diversified entertainment conglomerate
 
-These findings contribute to the understanding of volatility dynamics in tech stocks and provide practical guidance for risk managers and quantitative analysts working with these securities.
+Data spans from January 2012 to May 23, 2020 (2,111 observations).
+
+### Violation Ratio and VaR Volatility
+Using a window length of 500 observations for 1% VaR:
+
+| Method | Expected Violations | Actual Violations | Violation Ratio | VaR Volatility |
+|--------|---------------------|-------------------|-----------------|----------------|
+| EWMA | 21 | 53 | 2.515723 | 0.01880755 |
+
+The EWMA method performs poorly with a VR of 2.52, well above the ideal 1.00.
+
+![EWMA Backtesting](media/image17.png)
+
+The graph shows highly volatile VaR estimates that respond quickly to market changes.
+
+### Coverage and Independence Tests
+- Actual exceedances: 16 vs. expected: 31 at 95% confidence level
+- Unconditional test p-value: 0.0015 (reject null at 5%)
+- Conditional test p-value: 0.0044 (reject null at 5%)
+
+Both tests reject the null hypotheses of correct exceedances and independence, indicating that the EWMA model is not suitable for VaR forecasting for this portfolio.
+
+## 7. Advanced Backtests for EWMA
+
+### Data Summary
+This analysis focuses on Netflix (NFLX) stock returns from January 1, 2012, to May 23, 2020 (2,110 observations).
+
+### EWMA Backtest Results
+Using a minimum window length of 30 observations for 1% VaR:
+
+| Method | Expected Violations | Actual Violations | Violation Ratio | VaR Volatility |
+|--------|---------------------|-------------------|-----------------|----------------|
+| EWMA | 21 | 39 | 1.826923 | 0.02572906 |
+
+According to standard assessment rules:
+- VR ∈ [0.8, 1.2]: Model is good
+- VR ∈ [0.5, 0.8] or [1.2, 1.5]: Model is acceptable
+- VR ∈ [0.3, 0.5] or [1.5, 2]: Model is bad
+- VR < 0.3 or > 2: Model is useless
+
+With a VR of 1.83, the EWMA model is classified as "bad" for Netflix returns.
+
+![Advanced EWMA Backtesting](media/image18.png)
+
+### Statistical Tests for Violation Ratios and Clustering
+
+#### Unconditional Coverage Test
+- Actual exceedances: 38 vs. expected: 104 at 95% confidence level
+- Test statistic: 57.66
+- p-value: 3.11e-14 (reject null at 5%)
+
+The test strongly rejects the null hypothesis of correct exceedances, indicating that the model systematically understates risk.
+
+#### Independence Test (for Clustering)
+- Test statistic: 59.38
+- p-value: 1.28e-13 (reject null at 5%)
+
+The test rejects the null hypothesis of no clustering, indicating that violations are not independent. This means today's violation can predict tomorrow's violation, suggesting an inadequate VaR model for Netflix returns.
