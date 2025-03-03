@@ -156,24 +156,30 @@ Data spans from January 2012 to May 20, 2020 (2,107 observations).
 Moving window volatility was calculated for window lengths of 10, 100, and 1000 observations.
 
 Window Length 10
+
 ![Picture5](https://github.com/user-attachments/assets/0b9df345-525a-4530-b8d7-e30e1a2502ea)
 
 Window Length 100
+
 ![Picture6](https://github.com/user-attachments/assets/ed0120c0-ccdd-4275-9733-82e154832150)
 
 Window Length 1000
+
 ![Picture7](https://github.com/user-attachments/assets/4539a5ab-ec0a-4d3b-9b2a-ea1cad1f6d91)
 
 ### Correlation for Various Window Lengths
 Correlations between assets were calculated for window lengths of 10, 100, and 1000 observations.
 
 Correlation Window Length 10
+
 ![Picture8](https://github.com/user-attachments/assets/ce86885b-6e4c-414e-ae78-1eb8cf28e01b)
 
 Correlation Window Length 100
+
 ![Picture9](https://github.com/user-attachments/assets/ba2826c9-0f1f-4e2f-a05b-e70e99df7c48)
 
 Correlation Window Length 1000
+
 ![Picture10](https://github.com/user-attachments/assets/ee955f92-fbe4-4251-aef9-61bcb880832e)
 
 ### Analysis of Window Length Sensitivity
@@ -239,6 +245,7 @@ Using a window length of 500 observations for 1% VaR:
 | tGARCH | 21 | 38 | 1.616915 | 0.01638113 |
 
 Backtesting AAPL
+
 ![Picture12](https://github.com/user-attachments/assets/1a5e2c19-67f0-4705-b332-ba129489ae1b)
 
 The Historical Simulation performs best with a VR of 1.12, while normal GARCH and Student-t GARCH show higher VRs (1.68 and 1.62). However, the GARCH models respond faster to market movements due to their higher volatility (0.015 and 0.016).
@@ -253,6 +260,7 @@ Using a window length of 500 observations for 1% VaR:
 | tGARCH | 21 | 33 | 1.784534 | 0.02651924 |
 
 Backtesting FB
+
 ![Picture13](https://github.com/user-attachments/assets/da61bd67-fdf7-4597-9dd3-26614742a473)
 
 
@@ -268,6 +276,7 @@ Using a window length of 500 observations for 1% VaR:
 | tGARCH | 21 | 33 | 1.30597 | 0.01447579 |
 
 Backtesting AMZN
+
 ![Picture12](https://github.com/user-attachments/assets/fbcc498a-45f2-4f1a-9ec2-1f4846355733)
 
 The HS method shows the best results with a VR close to 1. For AMZN returns, normal GARCH performs better than Student-t GARCH, though both respond faster to market changes than HS.
@@ -326,6 +335,7 @@ Using a window length of 500 observations for 1% VaR:
 The EWMA method performs poorly with a VR of 2.52, well above the ideal 1.00.
 
 EWMA Backtesting
+
 ![Picture15](https://github.com/user-attachments/assets/acae3d53-0257-489a-a0e6-ef3cb98cffe5)
 
 
@@ -359,6 +369,7 @@ According to standard assessment rules:
 With a VR of 1.83, the EWMA model is classified as "bad" for Netflix returns.
 
 Advanced EWMA Backtesting
+
 ![Picture16](https://github.com/user-attachments/assets/df9175bc-727c-4cb7-b71b-82b20330773b)
 
 
